@@ -2,9 +2,6 @@
 <html>
 <body>
 
-<h2>Transfer GeniaceNFT - Testnet</h2>
-
-
 
 <!-- <div>
 	<button onclick="getLatestBlock()" >Get Latest Block </button>
@@ -48,14 +45,19 @@
 <br/><br/>
 
 <div>
+  <h2>Transfer GeniaceNFT - Testnet</h2>
   <!-- 0x54736a7d074d7816 -->
 	RECIPIENT ADDRESS:<textarea id='recipient'> </textarea><br>
   TOKEN ID:<textarea id='tokenId'></textarea><br>
-	<button onclick="sendTransaction()" >Send Transaction</button>
+	<button onclick="sendGeniaceNFT()" >Send Transaction</button>
 	<div id='sendTransactionResponse'></div>
-    
+</div>
 
 
+<div>
+  <h2>Get geni balance - Testnet</h2>
+	<button onclick="getGeniBalance()" >Get Geni Balance</button>
+	<div id='geniBalance'></div>
 </div>
 
 
@@ -67,7 +69,7 @@ window.fcl.config()
   .put("accessNode.api", "https://access-testnet.onflow.org")
   .put("challenge.handshake", "https://flow-wallet-testnet.blocto.app/authn") 
 
-const transactionScript = `
+const transferGeniaceNFTTransactionScript = `
 import NonFungibleToken from 0x631e88ae7f1d7c20
 import GeniaceNFT from 0x99eb28310626e56a
 
@@ -94,6 +96,22 @@ transaction(recipient: Address, withdrawID: UInt64) {
     }
 }
 
+`
+
+const getGeniBalanceScript = `
+import Geni from 0x85d301aec51787de
+import FungibleToken from 0x9a0766d93b6608b7
+
+// This script returns an account's Geni balance.
+
+pub fun main(address: Address): UFix64 {
+    let account = getAccount(address)
+    
+    let vaultRef = account.getCapability(Geni.BalancePublicPath)!.borrow<&Geni.Vault{FungibleToken.Balance}>()
+        ?? panic("Could not borrow Balance reference to the Vault")
+
+    return vaultRef.balance
+}
 `
 
 window.fcl.currentUser().subscribe(user => showUser({...user}))
@@ -131,7 +149,22 @@ var setStatus = function(status){
     document.getElementById('sendTransactionResponse').innerText = status;
 }
 
-var sendTransaction = async function() {
+var getGeniBalace = async function() {
+  try{
+    const response = await window.fcl.send([
+      window.fcl.script(getGeniBalanceScript),
+    ]);
+    var r  = await window.fcl.decode(response);
+
+    document.getElementById('geniBalance').innerText = JSON.stringify(r);
+
+  } catch(err){
+    document.getElementById('geniBalance').innerText = "0";
+  }
+    
+}
+
+var sendGeniaceNFT = async function() {
     // const response = await window.fcl.send([
     //   window.fcl.script(document.getElementById('script').value),
     // ]);
@@ -148,7 +181,7 @@ var sendTransaction = async function() {
 
     try {
       const { transactionId } = await window.fcl.send([
-        window.fcl.transaction(transactionScript),
+        window.fcl.transaction(transferGeniaceNFTTransactionScript),
         window.fcl.args([
           window.fcl.arg(document.getElementById('recipient').value.trim(), window.types.Address),
           window.fcl.arg(parseInt(document.getElementById('tokenId').value), window.types.UInt64),
