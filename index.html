@@ -113,12 +113,12 @@ pub fun main(address: Address): UFix64 {
     return vaultRef.balance
 }
 `
-
+var userAddrss = '';
 window.fcl.currentUser().subscribe(user => showUser({...user}))
 
 var showUser = function(user){
 	console.log(user);
-	
+      userAddrss = user.addr
 	    document.getElementById('loginResponse').innerText = JSON.stringify(user);
 }
 var getLatestBlock = async function() {
@@ -149,10 +149,13 @@ var setStatus = function(status){
     document.getElementById('sendTransactionResponse').innerText = status;
 }
 
-var getGeniBalace = async function() {
+var getGeniBalance = async function() {
   try{
     const response = await window.fcl.send([
       window.fcl.script(getGeniBalanceScript),
+      window.fcl.args([
+          window.fcl.arg(userAddrss, window.types.Address),
+        ])
     ]);
     var r  = await window.fcl.decode(response);
 
