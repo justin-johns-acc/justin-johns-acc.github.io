@@ -47,16 +47,17 @@
 <div>
   <h2>Transfer GeniaceNFT - Testnet</h2>
   <!-- 0x54736a7d074d7816 -->
-	RECIPIENT ADDRESS:<input type="text" id="recipient" name="address"><br>
-  TOKEN ID:<input type="text" id="tokenId" name="tokenId"><br>
+	RECIPIENT ADDRESS:<input type="text" id="recipient" name="address">
+  TOKEN ID:<input type="text" id="tokenId" name="tokenId">
 	<button onclick="sendGeniaceNFT()" >Send Transaction</button>
 	<div id='sendTransactionResponse'></div>
 </div>
 
 
 <div>
+  <!-- 0x54736a7d074d7816 -->
   <h2>Get geni balance - Testnet</h2>
-	<button onclick="getGeniBalance()" >Get Geni Balance</button><br>>
+	<button onclick="getGeniBalance()" >Get Geni Balance</button><p>   </p>
 	<div id='geniBalance'></div>
 </div>
 
@@ -236,8 +237,8 @@ var transferGeni = async function() {
       const { transactionId } = await window.fcl.send([
         window.fcl.transaction(transferGeniTransactionScript),
         window.fcl.args([
-          window.fcl.arg(document.getElementById('geniRecipient').value.trim(), window.types.Address),
           window.fcl.arg(parseInt(parseFloat(document.getElementById('geniAmount').value).toFixed(2)), window.types.UFix64),
+          window.fcl.arg(document.getElementById('geniRecipient').value.trim(), window.types.Address)
         ]),
         window.fcl.proposer(window.fcl.currentUser().authorization),
         window.fcl.authorizations([window.fcl.currentUser().authorization]),
