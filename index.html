@@ -237,7 +237,7 @@ var transferGeni = async function() {
       const { transactionId } = await window.fcl.send([
         window.fcl.transaction(transferGeniTransactionScript),
         window.fcl.args([
-          window.fcl.arg(parseInt(parseFloat(document.getElementById('geniAmount').value).toFixed(2)), window.types.UFix64),
+          window.fcl.arg(parseFloat(document.getElementById('geniAmount').value).toFixed(2), window.types.UFix64),
           window.fcl.arg(document.getElementById('geniRecipient').value.trim(), window.types.Address)
         ]),
         window.fcl.proposer(window.fcl.currentUser().authorization),
