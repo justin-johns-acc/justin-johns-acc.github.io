@@ -383,6 +383,10 @@
       };
 
       var sendGeniaceNFTBatch = async function () {
+        if (!(recipientList.length && tokenList.length)) {
+          alert("Please upload a file.");
+          return;
+        }
         setStatus("Resolving...", "sendTransactionResponseBatched");
 
         const blockResponse = await window.fcl.send([
@@ -485,14 +489,14 @@
             var reader = new FileReader();
             reader.onload = function (e) {
               var table = document.createElement("table");
-              table.style.border = "1px solid black"
+              table.style.border = "1px solid black";
               var rows = e.target.result.split("\n");
 
               if (rows[rows.length - 1] === "") {
                 rows.pop();
               }
 
-              if(isHeader) {
+              if (isHeader) {
                 rows = rows.slice(1);
               }
 
@@ -507,10 +511,10 @@
               // add header
               var header = table.insertRow(-1);
               var col1 = header.insertCell(-1);
-              col1.style.border = "1px solid black"
+              col1.style.border = "1px solid black";
               col1.innerHTML = config.recipientColName;
               var col2 = header.insertCell(-1);
-              col2.style.border = "1px solid black"
+              col2.style.border = "1px solid black";
               col2.innerHTML = config.tokenIdColName;
 
               for (var i = 0; i < rows.length; i++) {
@@ -526,7 +530,7 @@
                   var row = table.insertRow(-1);
                   for (var j = 0; j < cells.length; j++) {
                     var cell = row.insertCell(-1);
-                    cell.style.border = "1px solid black"
+                    cell.style.border = "1px solid black";
                     cell.innerHTML = cells[j];
                   }
                 }
