@@ -49,10 +49,12 @@
 
     <div>
       <h2>Transfer GeniaceNFT (Batch)- Testnet</h2>
+      <p id="batchUploadLimit"></p>
+      <p><a href="sample.csv">Sample file</a></p>
       <input type="file" id="fileUpload" />
       <input type="button" id="upload" value="Upload" onclick="upload()" />
       <hr />
-      <div id="dvCSV" style="max-height: 50vh; overflow: scroll"></div>
+      <div id="dvCSV" style="max-height: 50vh; overflow-y: scroll"></div>
       <br />
       <button onclick="sendGeniaceNFTBatch()">Send Transaction</button>
       <div id="sendTransactionResponseBatched"></div>
@@ -82,9 +84,15 @@
       var config = {
         maxRows: 200,
         colSize: 2,
+        recipientColName: "Recipients",
+        tokenIdColName: "TokenIDs",
       };
       var recipientList = [];
       var tokenList = [];
+
+      document.getElementById(
+        "batchUploadLimit"
+      ).innerText = `max records/file: ${config.maxRows}`;
 
       window.fcl
         .config()
@@ -452,6 +460,21 @@
         return Number.isInteger(tokenId);
       }
 
+      function isHeader(headerRow) {
+        let val = headerRow.split(",");
+        try {
+          if (
+            val[0].trim() == config.recipientColName &&
+            val[1].trim() == config.tokenIdColName
+          ) {
+            return true;
+          }
+          return false;
+        } catch (err) {
+          return false;
+        }
+      }
+
       function upload() {
         resetParamsList();
 
@@ -462,10 +485,15 @@
             var reader = new FileReader();
             reader.onload = function (e) {
               var table = document.createElement("table");
+              table.style.border = "1px solid black"
               var rows = e.target.result.split("\n");
 
               if (rows[rows.length - 1] === "") {
                 rows.pop();
+              }
+
+              if(isHeader) {
+                rows = rows.slice(1);
               }
 
               if (rows.length > config.maxRows) {
@@ -475,6 +503,15 @@
                 resetParamsList();
                 return;
               }
+
+              // add header
+              var header = table.insertRow(-1);
+              var col1 = header.insertCell(-1);
+              col1.style.border = "1px solid black"
+              col1.innerHTML = config.recipientColName;
+              var col2 = header.insertCell(-1);
+              col2.style.border = "1px solid black"
+              col2.innerHTML = config.tokenIdColName;
 
               for (var i = 0; i < rows.length; i++) {
                 var cells = rows[i].split(",");
@@ -489,6 +526,7 @@
                   var row = table.insertRow(-1);
                   for (var j = 0; j < cells.length; j++) {
                     var cell = row.insertCell(-1);
+                    cell.style.border = "1px solid black"
                     cell.innerHTML = cells[j];
                   }
                 }
