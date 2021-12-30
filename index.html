@@ -50,16 +50,15 @@
     <div>
       <h2>Transfer GeniaceNFT (Batch)- Testnet</h2>
       <input type="file" id="fileUpload" />
-      <input type="button" id="upload" value="Upload" onclick="Upload()" />
+      <input type="button" id="upload" value="Upload" onclick="upload()" />
       <hr />
-      <div id="dvCSV" style="max-height: 50vh; overflow: scroll;">
-      </div><br>
+      <div id="dvCSV" style="max-height: 50vh; overflow: scroll"></div>
+      <br />
       <button onclick="sendGeniaceNFTBatch()">Send Transaction</button>
-      <div id="sendTransactionResponse"></div>
+      <div id="sendTransactionResponseBatched"></div>
     </div>
 
     <div>
-
       <!-- 0x54736a7d074d7816 -->
       <h2>Get geni balance - Testnet</h2>
       <button onclick="getGeniBalance()">Get Geni Balance</button>
@@ -83,7 +82,7 @@
       var config = {
         maxRows: 200,
         colSize: 2,
-      }
+      };
       var recipientList = [];
       var tokenList = [];
 
@@ -96,121 +95,126 @@
         );
 
       const transferGeniaceNFTTransactionScript = `
-import NonFungibleToken from 0x631e88ae7f1d7c20
-import GeniaceNFT from 0x99eb28310626e56a
+              import NonFungibleToken from 0x631e88ae7f1d7c20
+              import GeniaceNFT from 0x99eb28310626e56a
 
-// This transaction transfers a Geniace NFT from one account to another.
+              // This transaction transfers a Geniace NFT from one account to another.
 
-transaction(recipient: Address, withdrawID: UInt64) {
-    prepare(signer: AuthAccount) {
-        
-        // get the recipients public account object
-        let recipient = getAccount(recipient)
+              transaction(recipient: Address, withdrawID: UInt64) {
+                  prepare(signer: AuthAccount) {
 
-        // borrow a reference to the signer's NFT collection
-        let collectionRef = signer.borrow<&GeniaceNFT.Collection>(from: GeniaceNFT.CollectionStoragePath)
-            ?? panic("Could not borrow a reference to the owner's collection")
+                      // get the recipients public account object
+                      let recipient = getAccount(recipient)
 
-        // borrow a public reference to the receivers collection
-        let depositRef = recipient.getCapability(GeniaceNFT.CollectionPublicPath)!.borrow<&{NonFungibleToken.CollectionPublic}>()!
+                      // borrow a reference to the signer's NFT collection
+                      let collectionRef = signer.borrow<&GeniaceNFT.Collection>(from: GeniaceNFT.CollectionStoragePath)
+                          ?? panic("Could not borrow a reference to the owner's collection")
 
-        // withdraw the NFT from the owner's collection
-        let nft <- collectionRef.withdraw(withdrawID: withdrawID)
+                      // borrow a public reference to the receivers collection
+                      let depositRef = recipient.getCapability(GeniaceNFT.CollectionPublicPath)!.borrow<&{NonFungibleToken.CollectionPublic}>()!
 
-        // Deposit the NFT in the recipient's collection
-        depositRef.deposit(token: <-nft)
-    }
-}
+                      // withdraw the NFT from the owner's collection
+                      let nft <- collectionRef.withdraw(withdrawID: withdrawID)
 
-`;
+                      // Deposit the NFT in the recipient's collection
+                      depositRef.deposit(token: <-nft)
+                  }
+              }
 
-const transferGeniaceNFTBatchTransactionScript = `
-import NonFungibleToken from 0x631e88ae7f1d7c20
-import GeniaceNFT from 0x99eb28310626e56a
+      `;
 
-// This transaction transfers a Geniace NFT from one account to another.
+      const transferGeniaceNFTBatchTransactionScript = `
+        import NonFungibleToken from 0x631e88ae7f1d7c20
+        import GeniaceNFT from 0x99eb28310626e56a
 
-transaction(recipient: Address, withdrawID: UInt64) {
-    prepare(signer: AuthAccount) {
-        
-        // get the recipients public account object
-        let recipient = getAccount(recipient)
+        // This transaction transfers a Geniace NFT from one account to another.
 
-        // borrow a reference to the signer's NFT collection
-        let collectionRef = signer.borrow<&GeniaceNFT.Collection>(from: GeniaceNFT.CollectionStoragePath)
-            ?? panic("Could not borrow a reference to the owner's collection")
+        transaction(recipients: [Address], withdrawIDs: [UInt64]) {
+            prepare(signer: AuthAccount) {
 
-        // borrow a public reference to the receivers collection
-        let depositRef = recipient.getCapability(GeniaceNFT.CollectionPublicPath)!.borrow<&{NonFungibleToken.CollectionPublic}>()!
+                // borrow a reference to the signer's NFT collection
+                let collectionRef = signer.borrow<&GeniaceNFT.Collection>(from: GeniaceNFT.CollectionStoragePath)
+                    ?? panic("Could not borrow a reference to the owner's collection")
 
-        // withdraw the NFT from the owner's collection
-        let nft <- collectionRef.withdraw(withdrawID: withdrawID)
+                var iter = 0
+                while iter < recipients.length {
 
-        // Deposit the NFT in the recipient's collection
-        depositRef.deposit(token: <-nft)
-    }
-}
+                  // get the recipients public account object
+                  var recipient = getAccount(recipients[iter])
 
-`;
+                  // borrow a public reference to the receivers collection
+                  var depositRef = recipient.getCapability(GeniaceNFT.CollectionPublicPath)!.borrow<&{NonFungibleToken.CollectionPublic}>()!
 
+                  // withdraw the NFT from the owner's collection
+                  var nft <- collectionRef.withdraw(withdrawID: withdrawIDs[iter])
+
+                  // Deposit the NFT in the recipient's collection
+                  depositRef.deposit(token: <-nft)
+
+                  iter = iter + 1
+                }
+            }
+        }
+
+      `;
 
       const getGeniBalanceScript = `
-import Geni from 0x85d301aec51787de
-import FungibleToken from 0x9a0766d93b6608b7
+              import Geni from 0x85d301aec51787de
+              import FungibleToken from 0x9a0766d93b6608b7
 
-// This script returns an account's Geni balance.
+              // This script returns an account's Geni balance.
 
-pub fun main(address: Address): UFix64 {
-    let account = getAccount(address)
-    
-    let vaultRef = account.getCapability(Geni.BalancePublicPath)!.borrow<&Geni.Vault{FungibleToken.Balance}>()
-        ?? panic("Could not borrow Balance reference to the Vault")
+              pub fun main(address: Address): UFix64 {
+                  let account = getAccount(address)
 
-    return vaultRef.balance
-}
-`;
+                  let vaultRef = account.getCapability(Geni.BalancePublicPath)!.borrow<&Geni.Vault{FungibleToken.Balance}>()
+                      ?? panic("Could not borrow Balance reference to the Vault")
+
+                  return vaultRef.balance
+              }
+              `;
 
       const transferGeniTransactionScript = `
-import FungibleToken from 0x9a0766d93b6608b7
-import Geni from 0x85d301aec51787de
+              import FungibleToken from 0x9a0766d93b6608b7
+              import Geni from 0x85d301aec51787de
 
-// This transaction is a template for a transaction that
-// could be used by anyone to send tokens to another account
-// that has been set up to receive tokens.
-//
-// The withdraw amount and the account from getAccount
-// would be the parameters to the transaction
+              // This transaction is a template for a transaction that
+              // could be used by anyone to send tokens to another account
+              // that has been set up to receive tokens.
+              //
+              // The withdraw amount and the account from getAccount
+              // would be the parameters to the transaction
 
-transaction(amount: UFix64, to: Address) {
+              transaction(amount: UFix64, to: Address) {
 
-    // The Vault resource that holds the tokens that are being transferred
-    let sentVault: @FungibleToken.Vault
+                  // The Vault resource that holds the tokens that are being transferred
+                  let sentVault: @FungibleToken.Vault
 
-    prepare(signer: AuthAccount) {
+                  prepare(signer: AuthAccount) {
 
-        // Get a reference to the signer's stored vault
-        let vaultRef = signer.borrow<&Geni.Vault>(from: Geni.VaultStoragePath)
-			?? panic("Could not borrow reference to the owner's Vault!")
+                      // Get a reference to the signer's stored vault
+                      let vaultRef = signer.borrow<&Geni.Vault>(from: Geni.VaultStoragePath)
+                    ?? panic("Could not borrow reference to the owner's Vault!")
 
-        // Withdraw tokens from the signer's stored vault
-        self.sentVault <- vaultRef.withdraw(amount: amount)
-    }
+                      // Withdraw tokens from the signer's stored vault
+                      self.sentVault <- vaultRef.withdraw(amount: amount)
+                  }
 
-    execute {
+                  execute {
 
-        // Get the recipient's public account object
-        let recipient = getAccount(to)
+                      // Get the recipient's public account object
+                      let recipient = getAccount(to)
 
-        // Get a reference to the recipient's Receiver
-        let receiverRef = recipient.getCapability(Geni.ReceiverPublicPath)!.borrow<&{FungibleToken.Receiver}>()
-			?? panic("Could not borrow receiver reference to the recipient's Vault")
+                      // Get a reference to the recipient's Receiver
+                      let receiverRef = recipient.getCapability(Geni.ReceiverPublicPath)!.borrow<&{FungibleToken.Receiver}>()
+                    ?? panic("Could not borrow receiver reference to the recipient's Vault")
 
-        // Deposit the withdrawn tokens in the recipient's receiver
-        receiverRef.deposit(from: <-self.sentVault)
-    }
-}
+                      // Deposit the withdrawn tokens in the recipient's receiver
+                      receiverRef.deposit(from: <-self.sentVault)
+                  }
+              }
 
-`;
+              `;
 
       var userAddrss = "";
 
@@ -371,11 +375,7 @@ transaction(amount: UFix64, to: Address) {
       };
 
       var sendGeniaceNFTBatch = async function () {
-        const response = await window.fcl.send([
-          window.fcl.script(document.getElementById('script').value),
-        ]);
-
-        setStatus("Resolving...", "sendTransactionResponse");
+        setStatus("Resolving...", "sendTransactionResponseBatched");
 
         const blockResponse = await window.fcl.send([
           window.fcl.getLatestBlock(),
@@ -385,7 +385,7 @@ transaction(amount: UFix64, to: Address) {
 
         try {
           const { transactionId } = await window.fcl.send([
-            window.fcl.transaction(transferGeniaceNFTTransactionScript),
+            window.fcl.transaction(transferGeniaceNFTBatchTransactionScript),
             window.fcl.args([
               window.fcl.arg(
                 recipientList,
@@ -405,27 +405,55 @@ transaction(amount: UFix64, to: Address) {
 
           setStatus(
             "Transaction sent, waiting for confirmation",
-            "sendTransactionResponse"
+            "sendTransactionResponseBatched"
           );
 
           const unsub = fcl.tx({ transactionId }).subscribe((transaction) => {
             if (window.fcl.tx.isSealed(transaction)) {
               console.log("Transaction:", transaction);
-              setStatus("Transaction is Sealed", "sendTransactionResponse");
+
+              if (transaction.errorMessage) {
+                setStatus(
+                  `Transaction failed !\n Error: ${transaction.errorMessage}`,
+                  "sendTransactionResponseBatched"
+                );
+                unsub();
+                return;
+              }
+
+              setStatus(
+                "Transaction is Sealed",
+                "sendTransactionResponseBatched"
+              );
               unsub();
             }
           });
         } catch (error) {
           console.error(error);
-          setStatus("Transaction failed", "sendTransactionResponse");
+          setStatus(
+            `Transaction failed \n ${error}`,
+            "sendTransactionResponseBatched"
+          );
         }
-        console.log(`recipients:${recipientList}\ntokens:${tokenList}`)
+        console.log(`recipients:${recipientList}\ntokens:${tokenList}`);
       };
 
-      function Upload() {
+      function resetParamsList() {
+        recipientList = [];
+        tokenList = [];
+      }
 
-        recipientList = []
-        tokenList = []
+      function validateAddress(address) {
+        pattern = /^(0x){0,1}[0-9a-fA-F]{16}$/g;
+        return pattern.test(address);
+      }
+
+      function validateTokenId(tokenId) {
+        return Number.isInteger(tokenId);
+      }
+
+      function upload() {
+        resetParamsList();
 
         var fileUpload = document.getElementById("fileUpload");
         var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt)$/;
@@ -436,21 +464,25 @@ transaction(amount: UFix64, to: Address) {
               var table = document.createElement("table");
               var rows = e.target.result.split("\n");
 
-              if(rows[rows.length - 1] === ''){
+              if (rows[rows.length - 1] === "") {
                 rows.pop();
               }
 
-              if(rows.length > config.maxRows){
-                alert(`The number of records exceeds max value ${config.maxRows}.`);
-                return 0;
+              if (rows.length > config.maxRows) {
+                alert(
+                  `The number of records exceeds max value ${config.maxRows}.`
+                );
+                resetParamsList();
+                return;
               }
 
               for (var i = 0; i < rows.length; i++) {
                 var cells = rows[i].split(",");
 
-                if(cells.length != config.colSize){
+                if (cells.length != config.colSize) {
                   alert(`The number of colums are wrong`);
-                  return 0;
+                  resetParamsList();
+                  return;
                 }
 
                 if (cells.length > 1) {
@@ -458,12 +490,22 @@ transaction(amount: UFix64, to: Address) {
                   for (var j = 0; j < cells.length; j++) {
                     var cell = row.insertCell(-1);
                     cell.innerHTML = cells[j];
-
                   }
                 }
+                if (!validateAddress(cells[0].trim())) {
+                  alert(`Wrong address format at row ${i + 1}`);
+                  resetParamsList();
+                  return;
+                }
 
-                recipientList.push(cells[0])
-                tokenList.push(cells[1])
+                if (!validateTokenId(parseInt(cells[1]))) {
+                  alert(`Token Id not an integer, row ${i + 1}`);
+                  resetParamsList();
+                  return;
+                }
+
+                recipientList.push(cells[0].trim());
+                tokenList.push(parseInt(cells[1]));
               }
               var dvCSV = document.getElementById("dvCSV");
               dvCSV.innerHTML = "";
